@@ -15,13 +15,19 @@ pub type StorageResult<T> = Result<T, StorageError>;
 /// The storage implementation decides on the serialization method of PersistentState
 /// as well.
 pub trait Storage {
-    fn load_state(&self) -> StorageResult<Option<PersistentState>> {
-        todo!()
-    }
+    /// New is not async - first time initialiation that may have need for async can be done
+    /// in the first write/read if need be.
+    fn new() -> Self;
 
-    fn save_state(&mut self, _state: &PersistentState) -> StorageResult<()> {
-        todo!()
-    }
+    // ?    Desugured from async according to https://users.rust-lang.org/t/async-in-public-trait/108400/2
+    // ?    I am putting this here for later because I don't fully understand the +/- Send implications
+    // ?    explained in the lint/answer.
+    fn load_state(&self) -> impl Future<Output = StorageResult<Option<PersistentState>>> + Send;
+
+    fn save_state(
+        &mut self,
+        _state: &PersistentState,
+    ) -> impl Future<Output = StorageResult<()>> + Send;
 }
 
 // For testing / example
@@ -34,15 +40,15 @@ pub struct MemoryStorage {
     inner: Option<String>,
 }
 
-impl MemoryStorage {
-    #[must_use]
-    pub fn new() -> Self {
-        Self { inner: None }
-    }
-}
+impl MemoryStorage {}
 
 impl Storage for MemoryStorage {
-    fn load_state(&self) -> StorageResult<Option<PersistentState>> {
+    fn new() -> Self {
+        Self { inner: None }
+    }
+
+    /// Loads persistent state from storage
+    async fn load_state(&self) -> StorageResult<Option<PersistentState>> {
         match &self.inner {
             Some(inner) => match &serde_json::from_str::<PersistentState>(&inner) {
                 Ok(persistent_state) => StorageResult::Ok(Some(persistent_state.clone())),
@@ -52,7 +58,8 @@ impl Storage for MemoryStorage {
         }
     }
 
-    fn save_state(&mut self, state: &PersistentState) -> StorageResult<()> {
+    /// Saves persistent state from storage
+    async fn save_state(&mut self, state: &PersistentState) -> StorageResult<()> {
         let ser = serde_json::to_string(state);
 
         match ser {
@@ -65,21 +72,30 @@ impl Storage for MemoryStorage {
     }
 }
 
-#[test]
-fn test_load_save() {
-    let ps = PersistentState {
-        current_term: 5,
-        voted_for: Some(6),
-        log: 1,
+#[cfg(test)]
+mod test {
+    use crate::{
+        log::RaftLog,
+        node::PersistentState,
+        persist::{MemoryStorage, Storage},
     };
 
-    let mut st = MemoryStorage::new();
+    #[tokio::test]
+    async fn test_load_save() {
+        let ps = PersistentState {
+            current_term: 5,
+            voted_for: Some(6),
+            log: RaftLog::new(),
+        };
 
-    st.save_state(&ps).unwrap();
+        let mut st = MemoryStorage::new();
 
-    let ps_loaded = st.load_state().unwrap().unwrap();
+        st.save_state(&ps).await.unwrap();
 
-    assert_eq!(ps_loaded.current_term, ps.current_term);
-    assert_eq!(ps_loaded.voted_for, ps.voted_for);
-    assert_eq!(ps_loaded.log, ps.log);
+        let ps_loaded = st.load_state().await.unwrap().unwrap();
+
+        assert_eq!(ps_loaded.current_term, ps.current_term);
+        assert_eq!(ps_loaded.voted_for, ps.voted_for);
+        assert_eq!(ps_loaded.log, ps.log);
+    }
 }

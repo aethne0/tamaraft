@@ -1,6 +1,6 @@
 use serde::{Deserialize, Serialize};
 
-use crate::persist::Storage;
+use crate::{log::RaftLog, persist::Storage};
 
 pub struct NodeConfig {
     pub id: u64,
@@ -11,7 +11,16 @@ pub struct NodeConfig {
 pub struct PersistentState {
     pub current_term: u64,
     pub voted_for: Option<u64>,
-    pub log: u64, // todo
+    pub log: RaftLog,
+}
+impl Default for PersistentState {
+    fn default() -> Self {
+        Self {
+            current_term: 1,
+            voted_for: None,
+            log: RaftLog::new(),
+        }
+    }
 }
 
 pub struct RaftNode<S> {
@@ -24,15 +33,16 @@ impl<S> RaftNode<S>
 where
     S: Storage,
 {
-    pub fn new(config: NodeConfig, storage: S) -> Self {
+    pub async fn new(config: NodeConfig, storage: S) -> Self {
+        let loaded_state = storage
+            .load_state()
+            .await
+            .expect("Loading initial state failed");
+
         Self {
             config,
             storage,
-            persistent: PersistentState {
-                current_term: 1,
-                voted_for: None,
-                log: 0,
-            },
+            persistent: loaded_state.unwrap_or_default(),
         }
     }
 
