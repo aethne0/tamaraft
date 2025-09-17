@@ -1,4 +1,39 @@
-use crate::node::PersistentState;
+use serde::{Deserialize, Serialize};
+
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq)]
+pub(crate) struct LogEntry {
+    term: u64,
+    index: u64,
+    data: Vec<u8>,
+}
+
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq)]
+pub struct RaftLog {
+    inner: Vec<LogEntry>,
+}
+
+impl RaftLog {
+    pub(crate) fn new() -> Self {
+        Self { inner: Vec::new() }
+    }
+}
+
+/// Fields that must be persisted during RPC methods and used in the case of node-recovery
+#[derive(Deserialize, Serialize, Clone)]
+pub struct PersistentState {
+    pub current_term: u64,
+    pub voted_for: Option<u64>,
+    pub log: RaftLog,
+}
+impl Default for PersistentState {
+    fn default() -> Self {
+        Self {
+            current_term: 1,
+            voted_for: None,
+            log: RaftLog::new(),
+        }
+    }
+}
 
 #[derive(Debug)]
 pub enum StorageError {
@@ -8,7 +43,7 @@ pub enum StorageError {
 }
 pub type StorageResult<T> = Result<T, StorageError>;
 
-/// Abstract trait for persistent storage
+/// Abstract trait for persistent storage, to be implemented by user constructing a RaftNode
 ///
 /// Node owns PersistentState
 ///
@@ -76,8 +111,7 @@ impl Storage for MemoryStorage {
 mod test {
     use crate::{
         log::RaftLog,
-        node::PersistentState,
-        persist::{MemoryStorage, Storage},
+        storage::{MemoryStorage, PersistentState, Storage},
     };
 
     #[tokio::test]

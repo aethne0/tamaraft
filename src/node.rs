@@ -1,26 +1,15 @@
-use serde::{Deserialize, Serialize};
+use std::time::Duration;
 
-use crate::{log::RaftLog, persist::Storage};
+use crate::storage::{PersistentState, Storage};
 
 pub struct NodeConfig {
     pub id: u64,
+    /// NOT including nodeself
     pub peers: Vec<u64>,
-}
 
-#[derive(Deserialize, Serialize, Clone)]
-pub struct PersistentState {
-    pub current_term: u64,
-    pub voted_for: Option<u64>,
-    pub log: RaftLog,
-}
-impl Default for PersistentState {
-    fn default() -> Self {
-        Self {
-            current_term: 1,
-            voted_for: None,
-            log: RaftLog::new(),
-        }
-    }
+    /// Election timeout for a node will be +/- 35% of this
+    pub election_timeout: Duration,
+    pub heartbeat_timeout: Duration,
 }
 
 pub struct RaftNode<S> {
@@ -29,10 +18,7 @@ pub struct RaftNode<S> {
     storage: S,
 }
 
-impl<S> RaftNode<S>
-where
-    S: Storage,
-{
+impl<S: Storage> RaftNode<S> {
     pub async fn new(config: NodeConfig, storage: S) -> Self {
         let loaded_state = storage
             .load_state()
@@ -44,9 +30,5 @@ where
             storage,
             persistent: loaded_state.unwrap_or_default(),
         }
-    }
-
-    pub fn client_cmd(&mut self, cmd: &[u8]) {
-        todo!()
     }
 }
