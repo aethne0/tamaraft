@@ -16,13 +16,3 @@ pub enum ClientMessage<'a> {
     ClientResp(ClientReqResult),
 }
 */
-
-use serde::{Deserialize, Serialize};
-
-#[derive(Serialize, Deserialize)]
-pub enum RaftMessage {
-    AppendEntriesReq,
-    AppendEntriesResp,
-    RequestVoteReq,
-    RequestVoteResp,
-}

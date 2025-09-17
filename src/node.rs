@@ -1,6 +1,9 @@
 use std::time::Duration;
 
-use crate::storage::{PersistentState, Storage};
+use crate::{
+    storage::{PersistentState, Storage},
+    transport::Transport,
+};
 
 pub struct NodeConfig {
     pub id: u64,
@@ -12,14 +15,15 @@ pub struct NodeConfig {
     pub heartbeat_timeout: Duration,
 }
 
-pub struct RaftNode<S> {
+pub struct RaftNode<S, T> {
     config: NodeConfig,
     persistent: PersistentState,
     storage: S,
+    transport: T,
 }
 
-impl<S: Storage> RaftNode<S> {
-    pub async fn new(config: NodeConfig, storage: S) -> Self {
+impl<S: Storage, T: Transport> RaftNode<S, T> {
+    pub async fn new(config: NodeConfig, storage: S, transport: T) -> Self {
         let loaded_state = storage
             .load_state()
             .await
@@ -27,8 +31,10 @@ impl<S: Storage> RaftNode<S> {
 
         Self {
             config,
-            storage,
             persistent: loaded_state.unwrap_or_default(),
+
+            storage,
+            transport,
         }
     }
 }
