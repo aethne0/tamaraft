@@ -1,3 +1,4 @@
+/*
 pub enum ClientReqError {
     Unspecified,
 }
@@ -14,5 +15,14 @@ pub enum ClientMessage<'a> {
     ClientReq(&'a [u8]),
     ClientResp(ClientReqResult),
 }
+*/
 
-//pub(crate) enum RaftMessage<'a> {}
+use serde::{Deserialize, Serialize};
+
+#[derive(Serialize, Deserialize)]
+pub enum RaftMessage {
+    AppendEntriesReq,
+    AppendEntriesResp,
+    RequestVoteReq,
+    RequestVoteResp,
+}

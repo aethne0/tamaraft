@@ -109,10 +109,7 @@ impl Storage for MemoryStorage {
 
 #[cfg(test)]
 mod test {
-    use crate::{
-        log::RaftLog,
-        storage::{MemoryStorage, PersistentState, Storage},
-    };
+    use crate::storage::{MemoryStorage, PersistentState, RaftLog, Storage};
 
     #[tokio::test]
     async fn test_load_save() {
