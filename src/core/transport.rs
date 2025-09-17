@@ -23,6 +23,14 @@ pub type TransportResult<T> = Result<T, TransportError>;
 ///
 /// The transport implementation decides on the serialization method of RaftMessage as well.
 pub trait Transport {
-    fn send_raft(&mut self, msg: &RaftMessage) -> impl Future<Output = TransportResult<()>> + Send;
-    fn recv_raft(&mut self) -> impl Future<Output = TransportResult<Option<RaftMessage>>> + Send;
+    fn send_raft(
+        &mut self,
+        destination_id: u64,
+        msg: &RaftMessage,
+    ) -> impl Future<Output = TransportResult<()>> + Send;
+
+    fn recv_raft(
+        &mut self,
+        node_id: u64,
+    ) -> impl Future<Output = TransportResult<Option<RaftMessage>>> + Send;
 }
