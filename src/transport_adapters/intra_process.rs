@@ -1,8 +1,6 @@
-// For testing / example
-
 use std::sync::Arc;
 
-use crate::transport::{RaftMessage, Transport, TransportError, TransportResult};
+use crate::core::transport::{RaftMessage, Transport, TransportError, TransportResult};
 
 /// Process-local message bus for testing and impl example
 ///

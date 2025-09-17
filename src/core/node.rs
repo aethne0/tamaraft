@@ -1,6 +1,6 @@
 use std::time::Duration;
 
-use crate::{
+use crate::core::{
     storage::{PersistentState, Storage},
     transport::Transport,
 };

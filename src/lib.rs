@@ -1,3 +1,4 @@
-pub mod node;
-pub mod storage;
-pub mod transport;
+pub mod core;
+
+pub mod storage_adapters;
+pub mod transport_adapters;

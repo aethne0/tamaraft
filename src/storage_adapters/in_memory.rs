@@ -1,6 +1,4 @@
-// For testing / example
-
-use crate::storage::{PersistentState, Storage, StorageError, StorageResult};
+use crate::core::storage::{PersistentState, Storage, StorageError, StorageResult};
 
 /// Storage implementation that is only in-memory. It will not actually offer
 /// persistence and is for testing purposes
@@ -44,7 +42,10 @@ impl Storage for MemoryStorage {
 
 #[cfg(test)]
 mod test {
-    use crate::storage::{PersistentState, RaftLog, Storage, in_memory::MemoryStorage};
+    use crate::{
+        core::storage::{PersistentState, RaftLog, Storage},
+        storage_adapters::in_memory::MemoryStorage,
+    };
 
     #[tokio::test]
     async fn test_load_save() {
